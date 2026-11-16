@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'icons.dart';
 import 'app_state.dart';
 
 void main() => runApp(AppScope(state: appState, child: const ToolboxApp()));
