@@ -683,4 +683,67 @@ class _CustomThemeSheetState extends State<CustomThemeSheet> {
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
         child: SafeArea(
           top: false,
-          child: Colum
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Custom Theme',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: s.text,
+                  decoration: TextDecoration.none,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Container(
+                height: 56,
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                alignment: Alignment.centerLeft,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  gradient: LinearGradient(colors: [c1, c2]),
+                ),
+                child: Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
+                ),
+              ),
+              const SizedBox(height: 16),
+              ColorRow(
+                label: 'Background color 1',
+                value: c1,
+                textColor: s.text,
+                onPick: (c) => setState(() => c1 = c),
+              ),
+              ColorRow(
+                label: 'Background color 2',
+                value: c2,
+                textColor: s.text,
+                onPick: (c) => setState(() => c2 = c),
+              ),
+              ColorRow(
+                label: 'Accent color',
+                value: accent,
+                textColor: s.text,
+                onPick: (c) => setState(() => accent = c),
+              ),
+              SizedBox(
+                width: double.infinity,
+                child: CupertinoButton.filled(
+                  child: const Text('Apply'),
+                  onPressed: () {
+                    appState.setTheme(AppTheme('Custom', c1, c2, accent));
+                    Navigator.pop(context);
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
