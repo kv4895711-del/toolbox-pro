@@ -330,7 +330,7 @@ class BigCard extends StatelessWidget {
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
-        showSoon(context, title);
+       if (!openTool(context, title)) showSoon(context, title);
       },
       child: GlassCard(
         blur: true,
@@ -375,11 +375,11 @@ class ToolTile extends StatelessWidget {
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
-        showSoon(context, tool.name);
       },
       onLongPress: () {
         HapticFeedback.mediumImpact();
         s.toggleFavorite(tool.name);
+        if (!openTool(context, tool.name)) showSoon(context, tool.name);
       },
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
