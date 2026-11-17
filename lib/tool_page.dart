@@ -1,9 +1,15 @@
 import 'package:flutter/cupertino.dart';
 import 'app_state.dart';
+import 'tools/age.dart';
 import 'tools/bmi.dart';
 import 'tools/calculator.dart';
+import 'tools/converter.dart';
+import 'tools/discount.dart';
+import 'tools/emi.dart';
+import 'tools/password.dart';
 import 'tools/percentage.dart';
 import 'tools/scientific.dart';
+import 'tools/wordcount.dart';
 
 class ToolPage extends StatelessWidget {
   final String title;
@@ -33,6 +39,12 @@ bool openTool(BuildContext context, String name) {
     'Scientific' => const ScientificTool(),
     'Percentage' => const PercentageTool(),
     'BMI' => const BmiTool(),
+    'Age' => const AgeTool(),
+    'Discount' => const DiscountTool(),
+    'EMI' => const EmiTool(),
+    'Converter' => const ConverterTool(),
+    'Password' => const PasswordTool(),
+    'Word Counter' => const WordCountTool(),
     _ => null,
   };
   if (page == null) return false;
