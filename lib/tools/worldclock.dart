@@ -666,4 +666,106 @@ class _WorldClockToolState extends State<WorldClockTool> {
 class _CitySheet extends StatelessWidget {
   final List<String> taken;
   final ValueChanged<String> onPick;
-  const _CityS
+  const _CitySheet({required this.taken, required this.onPick});
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    final mq = MediaQuery.of(context);
+    final avail = [
+      for (final c in allCities)
+        if (!taken.contains(c.name)) c,
+    ];
+    return Container(
+      height: mq.size.height * 0.7,
+      margin: EdgeInsets.fromLTRB(12, 0, 12, 12 + mq.padding.bottom),
+      child: GlassCard(
+        radius: 28,
+        padding: const EdgeInsets.fromLTRB(18, 18, 18, 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Add city',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                color: s.text,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Expanded(
+              child: avail.isEmpty
+                  ? Center(
+                      child: Text(
+                        'Saare cities already add ho chuke hain',
+                        style: TextStyle(fontSize: 14, color: s.subText),
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: EdgeInsets.zero,
+                      itemCount: avail.length,
+                      itemBuilder: (context, i) {
+                        final c = avail[i];
+                        return GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            onPick(c.name);
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            decoration: BoxDecoration(
+                              border: Border(
+                                bottom: BorderSide(color: s.glassBorder),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        c.name,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w700,
+                                          color: s.text,
+                                        ),
+                                      ),
+                                      Text(
+                                        c.country,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: s.subText,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Text(
+                                  utcLabel(c.std),
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: s.subText,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
