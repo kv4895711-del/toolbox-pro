@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'icons.dart';
 import 'app_state.dart';
 import 'tool_page.dart';
+import 'maps/maps_tab.dart';
 
 void main() => runApp(AppScope(state: appState, child: const ToolboxApp()));
 
