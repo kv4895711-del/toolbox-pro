@@ -4,9 +4,11 @@ import 'chrome.dart';
 import 'tools/age.dart';
 import 'tools/bmi.dart';
 import 'tools/calculator.dart';
+import 'tools/compass.dart';
 import 'tools/converter.dart';
 import 'tools/discount.dart';
 import 'tools/emi.dart';
+import 'tools/level.dart';
 import 'tools/notes.dart';
 import 'tools/password.dart';
 import 'tools/percentage.dart';
@@ -15,6 +17,7 @@ import 'tools/stopwatch.dart';
 import 'tools/timer.dart';
 import 'tools/todo.dart';
 import 'tools/wordcount.dart';
+import 'tools/worldclock.dart';
 
 class ToolPage extends StatelessWidget {
   final String title;
@@ -76,6 +79,9 @@ bool openTool(BuildContext context, String name) {
     'Stopwatch' => const StopwatchTool(),
     'Notes' => const NotesTool(),
     'To-Do' => const TodoTool(),
+    'Compass' => const CompassTool(),
+    'Level' => const LevelTool(),
+    'World Clock' => const WorldClockTool(),
     _ => null,
   };
   if (page == null) return false;
