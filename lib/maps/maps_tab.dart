@@ -1,15 +1,12 @@
-import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
-import '../app_state.dart';
 import 'geo_api.dart';
+import 'map_cards.dart';
+import 'map_glass.dart';
+import 'map_layers.dart';
 import 'map_widgets.dart';
-
-const osmUrl = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
-const satUrl =
-    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+import 'route_api.dart';
 
 class MapsTab extends StatefulWidget {
   final bool active;
@@ -22,12 +19,13 @@ class MapsTab extends StatefulWidget {
 class _MapsTabState extends State<MapsTab> {
   final mc = MapController();
   final search = TextEditingController();
-  StreamSubscription<Position>? sub;
+  final loc = LocService();
   LatLng? me;
   LatLng? pin;
-  String pinText = '';
-  String note = '';
+  Place? place;
+  RouteInfo? route;
   List<Place> results = [];
+  String note = '';
   bool sat = false;
   bool ready = false;
   bool started = false;
@@ -38,41 +36,24 @@ class _MapsTabState extends State<MapsTab> {
     super.didUpdateWidget(old);
     if (widget.active && !started) {
       started = true;
-      startLocation();
+      startLoc();
     }
   }
 
   @override
   void dispose() {
-    sub?.cancel();
+    loc.stop();
     search.dispose();
     super.dispose();
   }
 
-  Future<void> startLocation() async {
-    if (!await Geolocator.isLocationServiceEnabled()) {
-      setState(() => note = 'Phone ka GPS (location) on karo');
-      return;
-    }
-    var p = await Geolocator.checkPermission();
-    if (p == LocationPermission.denied) {
-      p = await Geolocator.requestPermission();
-    }
-    if (p == LocationPermission.denied ||
-        p == LocationPermission.deniedForever) {
-      setState(() => note = 'Location permission nahi mili');
-      return;
-    }
-    sub = Geolocator.getPositionStream(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.high,
-        distanceFilter: 5,
-      ),
-    ).listen((pos) {
+  Future<void> startLoc() async {
+    final err = await loc.start((ll) {
       if (!mounted) return;
-      setState(() => me = LatLng(pos.latitude, pos.longitude));
+      setState(() => me = ll);
       centerOnce();
     });
+    if (err != null && mounted) setState(() => note = err);
   }
 
   void centerOnce() {
@@ -100,8 +81,10 @@ class _MapsTabState extends State<MapsTab> {
     FocusScope.of(context).unfocus();
     setState(() {
       pin = p.point;
-      pinText = p.name;
+      place = p;
+      route = null;
       results = [];
+      note = '';
     });
     mc.move(p.point, 16);
   }
@@ -110,115 +93,69 @@ class _MapsTabState extends State<MapsTab> {
     FocusScope.of(context).unfocus();
     setState(() {
       pin = ll;
-      pinText = 'Address dhoondh raha hoon...';
+      place = Place('Dropped pin', '', 'Address dhoondh raha hoon...', ll);
+      route = null;
       results = [];
+      note = '';
     });
-    final a = await addressOf(ll);
-    if (mounted && pin == ll) setState(() => pinText = a);
+    final pl = await reversePlace(ll);
+    if (!mounted || pin != ll) return;
+    setState(() {
+      place = pl ?? Place('Dropped pin', '', 'Address nahi mila', ll);
+    });
+  }
+
+  Future<void> getRoute() async {
+    final to = pin;
+    if (to == null) return;
+    if (me == null) {
+      setState(() => note = 'Apni location abhi nahi mili, GPS on karo');
+      return;
+    }
+    setState(() => note = 'Route dhoondh raha hoon...');
+    final r = await fetchRoute(me!, to);
+    if (!mounted) return;
+    if (r == null) {
+      setState(() => note = 'Route nahi mila, thodi der baad try karo');
+      return;
+    }
+    setState(() {
+      route = r;
+      note = '';
+    });
+    if (ready) {
+      mc.fitCamera(CameraFit.coordinates(
+        coordinates: r.points,
+        padding: const EdgeInsets.fromLTRB(50, 170, 50, 320),
+      ));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final s = AppScope.of(context);
     if (!started) return const SizedBox.shrink();
-    final base = 100 + MediaQuery.of(context).padding.bottom;
+    final bp = MediaQuery.of(context).padding;
+    final base = 100 + bp.bottom;
     return Stack(
       children: [
         Positioned.fill(
-          child: FlutterMap(
-            mapController: mc,
-            options: MapOptions(
-              initialCenter: const LatLng(20.5937, 78.9629),
-              initialZoom: 4.5,
-              minZoom: 2,
-              maxZoom: 19,
-              onMapReady: () {
-                ready = true;
-                centerOnce();
-              },
-              onTap: (_, ll) => dropPin(ll),
-            ),
-            children: [
-              TileLayer(
-                key: ValueKey(sat),
-                urlTemplate: sat ? satUrl : osmUrl,
-                userAgentPackageName: 'com.example.toolbox_pro',
-                maxNativeZoom: 19,
-              ),
-              MarkerLayer(
-                markers: [
-                  if (me != null)
-                    Marker(
-                      point: me!,
-                      width: 22,
-                      height: 22,
-                      child: const MeDot(),
-                    ),
-                  if (pin != null)
-                    Marker(
-                      point: pin!,
-                      width: 40,
-                      height: 40,
-                      alignment: Alignment.topCenter,
-                      child: const Icon(
-                        CupertinoIcons.map_pin,
-                        size: 36,
-                        color: Color(0xFFFF3B30),
-                      ),
-                    ),
-                ],
-              ),
-            ],
+          child: MapLayers(
+            mc: mc,
+            sat: sat,
+            me: me,
+            pin: pin,
+            route: route,
+            onReady: () {
+              ready = true;
+              centerOnce();
+            },
+            onTapMap: dropPin,
           ),
         ),
-        Positioned(
-          top: 0,
-          left: 16,
-          right: 16,
-          child: SafeArea(
-            bottom: false,
-            child: Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Column(
-                children: [
-                  GlassCard(
-                    blur: true,
-                    radius: 22,
-                    padding: const EdgeInsets.all(4),
-                    child: CupertinoSearchTextField(
-                      controller: search,
-                      placeholder: 'Search place or address',
-                      backgroundColor: const Color(0x00000000),
-                      itemColor: s.subText,
-                      style: TextStyle(color: s.text),
-                      placeholderStyle: TextStyle(color: s.subText),
-                      onSubmitted: doSearch,
-                      onChanged: (v) {
-                        if (v.isEmpty) setState(() => results = []);
-                      },
-                    ),
-                  ),
-                  if (note.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: InfoCard(text: note),
-                    ),
-                  if (results.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: ResultsCard(
-                        names: [for (final r in results) r.name],
-                        onPick: (i) => pick(results[i]),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
-        ),
+        const Positioned(left: 0, right: 0, bottom: 0, child: BottomScrim()),
         Positioned(
           right: 16,
-          bottom: base + 10 + (pin != null ? 90 : 0),
+          top: bp.top + 80,
           child: Column(
             children: [
               MapBtn(
@@ -231,28 +168,43 @@ class _MapsTabState extends State<MapsTab> {
             ],
           ),
         ),
-        if (pin != null)
+        if (route != null)
           Positioned(
             left: 16,
             right: 16,
-            bottom: base + 10,
-            child: InfoCard(
-              text: pinText,
-              onClose: () => setState(() => pin = null),
+            bottom: base + 8,
+            child: RouteCard(
+              route: route!,
+              dest: place?.title ?? '',
+              onClose: () => setState(() => route = null),
+            ),
+          )
+        else if (place != null)
+          Positioned(
+            left: 16,
+            right: 16,
+            bottom: base + 8,
+            child: PlaceCard(
+              place: place!,
+              onDirections: getRoute,
+              onClose: () => setState(() {
+                pin = null;
+                place = null;
+              }),
             ),
           ),
+        Positioned(left: 12, bottom: base - 10, child: MapCredit(sat: sat)),
         Positioned(
-          left: 12,
-          bottom: base - 10,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            color: const Color(0xAAFFFFFF),
-            child: Text(
-              sat
-                  ? '© Esri, Maxar, Earthstar Geographics'
-                  : '© OpenStreetMap contributors',
-              style: const TextStyle(fontSize: 10, color: Color(0xFF000000)),
-            ),
+          top: 0,
+          left: 0,
+          right: 0,
+          child: MapSearchOverlay(
+            controller: search,
+            note: note,
+            results: results,
+            onSubmit: doSearch,
+            onCleared: () => setState(() => results = []),
+            onPick: pick,
           ),
         ),
       ],
