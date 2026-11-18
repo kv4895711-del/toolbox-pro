@@ -57,6 +57,7 @@ final allTools = [
 ];
 
 void showSoon(BuildContext context, String name) {
+  if (openTool(context, name)) return;
   showCupertinoDialog(
     context: context,
     builder: (ctx) => CupertinoAlertDialog(
@@ -373,13 +374,13 @@ class ToolTile extends StatelessWidget {
     final s = AppScope.of(context);
     final fav = s.favorites.contains(tool.name);
     return GestureDetector(
-      onTap: () {
+            onTap: () {
         HapticFeedback.lightImpact();
+        showSoon(context, tool.name);
       },
       onLongPress: () {
         HapticFeedback.mediumImpact();
         s.toggleFavorite(tool.name);
-        if (!openTool(context, tool.name)) showSoon(context, tool.name);
       },
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
