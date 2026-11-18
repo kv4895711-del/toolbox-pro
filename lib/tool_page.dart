@@ -7,9 +7,13 @@ import 'tools/calculator.dart';
 import 'tools/converter.dart';
 import 'tools/discount.dart';
 import 'tools/emi.dart';
+import 'tools/notes.dart';
 import 'tools/password.dart';
 import 'tools/percentage.dart';
 import 'tools/scientific.dart';
+import 'tools/stopwatch.dart';
+import 'tools/timer.dart';
+import 'tools/todo.dart';
 import 'tools/wordcount.dart';
 
 class ToolPage extends StatelessWidget {
@@ -68,6 +72,10 @@ bool openTool(BuildContext context, String name) {
     'Converter' => const ConverterTool(),
     'Password' => const PasswordTool(),
     'Word Counter' => const WordCountTool(),
+    'Timer' => const TimerTool(),
+    'Stopwatch' => const StopwatchTool(),
+    'Notes' => const NotesTool(),
+    'To-Do' => const TodoTool(),
     _ => null,
   };
   if (page == null) return false;
