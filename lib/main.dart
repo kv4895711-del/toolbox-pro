@@ -88,7 +88,8 @@ class _RootPageState extends State<RootPage> {
   Widget build(BuildContext context) {
     final pages = [
       const HomeTab(),
-      ComingSoon(title: 'Maps', icon: PhosphorIconsLight.mapTrifold),
+      // ComingSoon(title: 'Maps', icon: PhosphorIconsLight.mapTrifold),
+            MapsTab(active: tab == 1),
       ComingSoon(title: 'AI Assistant', icon: PhosphorIconsLight.sparkle),
       const SettingsTab(),
     ];
