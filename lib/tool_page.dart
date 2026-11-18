@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'app_state.dart';
+import 'chrome.dart';
 import 'tools/age.dart';
 import 'tools/bmi.dart';
 import 'tools/calculator.dart';
@@ -19,15 +20,37 @@ class ToolPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
-    return GradientBackground(
+    return AuroraBackground(
       child: CupertinoPageScaffold(
         backgroundColor: const Color(0x00000000),
-        navigationBar: CupertinoNavigationBar(
-          backgroundColor: const Color(0x00000000),
-          border: null,
-          middle: Text(title, style: TextStyle(color: s.text)),
+        child: SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                child: Row(
+                  children: const [
+                    GlassBack(),
+                    Expanded(child: Center(child: BrandMark())),
+                    SizedBox(width: 48),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(top: 14, bottom: 12),
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 34,
+                    fontWeight: FontWeight.w700,
+                    color: s.text,
+                  ),
+                ),
+              ),
+              Expanded(child: child),
+            ],
+          ),
         ),
-        child: SafeArea(child: child),
       ),
     );
   }
