@@ -1,65 +1,15 @@
 import 'package:flutter/cupertino.dart';
-import '../app_state.dart';
-
-class MapBtn extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-  final bool on;
-  const MapBtn({
-    super.key,
-    required this.icon,
-    required this.onTap,
-    this.on = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final s = AppScope.of(context);
-    return GestureDetector(
-      onTap: onTap,
-      child: SizedBox(
-        width: 48,
-        height: 48,
-        child: GlassCard(
-          blur: true,
-          radius: 24,
-          padding: EdgeInsets.zero,
-          child: Center(
-            child: Icon(icon, size: 22, color: on ? s.theme.accent : s.text),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class MeDot extends StatelessWidget {
-  const MeDot({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF0A84FF),
-        shape: BoxShape.circle,
-        border: Border.all(color: const Color(0xFFFFFFFF), width: 3),
-        boxShadow: const [BoxShadow(color: Color(0x55000000), blurRadius: 6)],
-      ),
-    );
-  }
-}
+import 'geo_api.dart';
+import 'map_glass.dart';
 
 class InfoCard extends StatelessWidget {
   final String text;
-  final VoidCallback? onClose;
-  const InfoCard({super.key, required this.text, this.onClose});
+  const InfoCard({super.key, required this.text});
 
   @override
   Widget build(BuildContext context) {
-    final s = AppScope.of(context);
-    return GlassCard(
-      blur: true,
-      radius: 22,
+    final p = MapPal.of(context);
+    return MapGlass(
       child: Row(
         children: [
           Expanded(
@@ -67,14 +17,9 @@ class InfoCard extends StatelessWidget {
               text,
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 14, color: s.text),
+              style: TextStyle(fontSize: 14, color: p.text),
             ),
           ),
-          if (onClose != null)
-            GestureDetector(
-              onTap: onClose,
-              child: Icon(CupertinoIcons.xmark_circle_fill, color: s.subText),
-            ),
         ],
       ),
     );
@@ -82,36 +27,50 @@ class InfoCard extends StatelessWidget {
 }
 
 class ResultsCard extends StatelessWidget {
-  final List<String> names;
-  final ValueChanged<int> onPick;
-  const ResultsCard({super.key, required this.names, required this.onPick});
+  final List<Place> items;
+  final ValueChanged<Place> onPick;
+  const ResultsCard({super.key, required this.items, required this.onPick});
 
   @override
   Widget build(BuildContext context) {
-    final s = AppScope.of(context);
-    return GlassCard(
-      blur: true,
-      radius: 22,
-      padding: const EdgeInsets.symmetric(vertical: 6),
+    final p = MapPal.of(context);
+    return MapGlass(
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Column(
         children: [
-          for (var i = 0; i < names.length; i++)
+          for (final it in items)
             GestureDetector(
               behavior: HitTestBehavior.opaque,
-              onTap: () => onPick(i),
+              onTap: () => onPick(it),
               child: Padding(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
                 child: Row(
                   children: [
-                    Icon(CupertinoIcons.location, size: 18, color: s.subText),
+                    Icon(CupertinoIcons.location_solid,
+                        size: 18, color: p.sub),
                     const SizedBox(width: 10),
                     Expanded(
-                      child: Text(
-                        names[i],
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: 14, color: s.text),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            it.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: p.text,
+                            ),
+                          ),
+                          Text(
+                            it.address,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(fontSize: 12.5, color: p.sub),
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -119,6 +78,64 @@ class ResultsCard extends StatelessWidget {
               ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+class MapSearchOverlay extends StatelessWidget {
+  final TextEditingController controller;
+  final String note;
+  final List<Place> results;
+  final ValueChanged<String> onSubmit;
+  final VoidCallback onCleared;
+  final ValueChanged<Place> onPick;
+  const MapSearchOverlay({
+    super.key,
+    required this.controller,
+    required this.note,
+    required this.results,
+    required this.onSubmit,
+    required this.onCleared,
+    required this.onPick,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final p = MapPal.of(context);
+    return SafeArea(
+      bottom: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+        child: Column(
+          children: [
+            MapGlass(
+              padding: const EdgeInsets.all(4),
+              child: CupertinoSearchTextField(
+                controller: controller,
+                placeholder: 'Search place or address',
+                backgroundColor: const Color(0x00000000),
+                itemColor: p.sub,
+                style: TextStyle(color: p.text),
+                placeholderStyle: TextStyle(color: p.sub),
+                onSubmitted: onSubmit,
+                onChanged: (v) {
+                  if (v.isEmpty) onCleared();
+                },
+              ),
+            ),
+            if (note.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: InfoCard(text: note),
+              ),
+            if (results.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: ResultsCard(items: results, onPick: onPick),
+              ),
+          ],
+        ),
       ),
     );
   }
